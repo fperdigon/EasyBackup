@@ -1,6 +1,7 @@
 # Folders to ignore
 /__pycache__/*
 /.idea/*
+/logs/*
 
 # Files to ignore
 *.pyc
