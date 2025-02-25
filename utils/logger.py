@@ -4,7 +4,7 @@ import os
 import datetime
 
 # Create the logs path
-logs_path = f"{Path(__file__).parent}/logs/"
+logs_path = f"{Path(__file__).parent.parent}/logs/"
 if os.path.exists(logs_path) and os.path.isdir(logs_path):
     pass
 else:
