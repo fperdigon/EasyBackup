@@ -1,0 +1,16 @@
+# Folders to ignore
+/__pycache__/*
+/.idea/*
+
+# Files to ignore
+*.pyc
+*.png
+*.npy
+*.hdf5
+*.pkl
+*.gz
+*.mat
+*.zip
+tes*
+.directory
+/utils/credentials_raw_testing_DO_NOT_ADD_TO_REPO.py
