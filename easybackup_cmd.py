@@ -29,14 +29,14 @@ if __name__ == "__main__":
     # Adding credentials stored infile for testing
 
     
-    
-    from utils.credentials_raw_testing_DO_NOT_ADD_TO_REPO import connections_dict
-    connection_dict = connections_dict["NAS No Key"]
+    # Temporal backup configuration
+    from utils.credentials_raw_testing_DO_NOT_ADD_TO_REPO import test_backup_configuration
+    backup_conf_dict = test_backup_configuration["NAS No Key"]
 
-    run_incremental_backup(src=connection_dict["src"],
-                           dest=connection_dict["dest"],
-                           user=connection_dict["user"],
-                           ssh_password=connection_dict["ssh_password"],
-                           remote_host=connection_dict["remote_host"],
-                           ssh_port=connection_dict["ssh_port"],
-                           keep_days=connection_dict["keep_days"])
+    run_incremental_backup(src=backup_conf_dict["src"],
+                           dest=backup_conf_dict["dest"],
+                           user=backup_conf_dict["user"],
+                           ssh_password=backup_conf_dict["ssh_password"],
+                           remote_host=backup_conf_dict["remote_host"],
+                           ssh_port=backup_conf_dict["ssh_port"],
+                           keep_days=backup_conf_dict["keep_days"])
