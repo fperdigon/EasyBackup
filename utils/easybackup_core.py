@@ -6,28 +6,28 @@ import re
 from utils.logger import logger  # Import the shared logger
 
 
-def test_ssh_connection_with_sshpass(host, port=22, username=None, password=None, timeout=5):
+def test_ssh_connection_with_sshpass(remote_host, ssh_port=22, ssh_user=None, ssh_password=None, timeout=5):
     """
     Test SSH connection using sshpass for password authentication and subprocess.
 
     Args:
     - host (str): The remote server's hostname or IP address.
     - port (int, optional): SSH port (default is 22).
-    - username (str): SSH username.
-    - password (str): SSH password for authentication.
+    - ssh_user (str): SSH username.
+    - ssh_password (str): SSH password for authentication.
     - timeout (int, optional): Connection timeout in seconds.
 
     Returns:
     - bool: True if connection is successful, False otherwise.
     - str: Error message if connection fails.
     """
-    if not password:
+    if not ssh_password:
         return False, "Password is required when using sshpass."
 
     # Create the sshpass command using password and ssh
     ssh_command = [
-        "sshpass", "-p", password, "ssh", "-o", f"ConnectTimeout={timeout}", "-p", str(port),
-        f"{username}@{host}", "exit"
+        "sshpass", "-p", ssh_password, "ssh", "-o", f"ConnectTimeout={timeout}", "-p", str(ssh_port),
+        f"{ssh_user}@{remote_host}", "exit"
     ]
 
     try:
@@ -97,34 +97,34 @@ def parse_rsync_progress(line):
     return out_dict
 
 
-def run_incremental_backup(src, dest, user, remote_host, ssh_password, ssh_port=22, keep_days=None):
+def run_incremental_backup(local_path, remote_path, ssh_user, remote_host, ssh_password, ssh_port=22, keep_days=None):
     """
     Perform incremental backups using rsync with SSH password authentication and show overall progress.
 
     Parameters:
-        src (str): Local source directory.
-        dest (str): Remote backup directory.
-        user (str): SSH username.
+        local_path (str): Local source directory.
+        remote_path (str): Remote backup directory.
+        ssh_user (str): SSH username.
         remote_host (str): Remote server address.
         ssh_password (str): SSH password for authentication.
         ssh_port (int): SSH port.
         keep_days (int): Number of days to keep old backups.
     """
 
-    success, message = test_ssh_connection_with_sshpass(host=remote_host, port=ssh_port, username=user, password=ssh_password)
+    success, message = test_ssh_connection_with_sshpass(remote_host=remote_host, ssh_port=ssh_port, ssh_user=ssh_user, ssh_password=ssh_password)
 
     if success:
         logger.info("SSH connection sucessful")
 
         date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        new_backup = f"{dest}/{date_str}"
-        latest = f"{dest}/latest"
+        new_backup = f"{remote_path}/{date_str}"
+        latest = f"{remote_path}/latest"
 
         # SSH command with password authentication using sshpass
         ssh_cmd = f"sshpass -p '{ssh_password}' ssh -p {ssh_port}"
 
         # Find the previous backup
-        get_prev_cmd = f"{ssh_cmd} {user}@{remote_host} 'readlink {latest}'"
+        get_prev_cmd = f"{ssh_cmd} {ssh_user}@{remote_host} 'readlink {latest}'"
         try:
             prev_backup = subprocess.check_output(get_prev_cmd, shell=True, text=True).strip() 
         except subprocess.CalledProcessError:
@@ -133,16 +133,16 @@ def run_incremental_backup(src, dest, user, remote_host, ssh_password, ssh_port=
         logger.info(f"Previous backup found: {prev_backup}")    
 
         # Create new backup directory on remote server
-        process = subprocess.run(f"{ssh_cmd} {user}@{remote_host} 'mkdir -p {new_backup}'", shell=True, check=True)        
+        process = subprocess.run(f"{ssh_cmd} {ssh_user}@{remote_host} 'mkdir -p {new_backup}'", shell=True, check=True)        
 
         # Rsync command with password authentication and progress tracking
         rsync_base = "rsync -a --delete --info=progress2 --progress"
         rsync_ssh = f"-e 'sshpass -p \"{ssh_password}\" ssh -p {ssh_port}'"
         
         if prev_backup:
-            rsync_cmd = f"{rsync_base} --link-dest={prev_backup} {rsync_ssh} {src} {user}@{remote_host}:{new_backup}"
+            rsync_cmd = f"{rsync_base} --link-remote_path={prev_backup} {rsync_ssh} {local_path} {ssh_user}@{remote_host}:{new_backup}"
         else:
-            rsync_cmd = f"{rsync_base} {rsync_ssh} {src} {user}@{remote_host}:{new_backup}"
+            rsync_cmd = f"{rsync_base} {rsync_ssh} {local_path} {ssh_user}@{remote_host}:{new_backup}"
 
         logger.info(f"Used rsync command: {rsync_cmd.replace(ssh_password, '********')}")
 
@@ -174,12 +174,12 @@ def run_incremental_backup(src, dest, user, remote_host, ssh_password, ssh_port=
         process.wait()
 
         # Update the "latest" symlink
-        update_symlink_cmd = f"{ssh_cmd} {user}@{remote_host} 'rm -f {latest} && ln -s {new_backup} {latest}'"
+        update_symlink_cmd = f"{ssh_cmd} {ssh_user}@{remote_host} 'rm -f {latest} && ln -s {new_backup} {latest}'"
         subprocess.run(update_symlink_cmd, shell=True, check=True)
 
         # Optional: Delete old backups
         if keep_days:
-            delete_old_cmd = f"{ssh_cmd} {user}@{remote_host} 'find {dest} -maxdepth 1 -type d -mtime +{keep_days} -exec rm -rf {{}} \;'"
+            delete_old_cmd = f"{ssh_cmd} {ssh_user}@{remote_host} 'find {remote_path} -maxdepth 1 -type d -mtime +{keep_days} -exec rm -rf {{}} \;'"
             subprocess.run(delete_old_cmd, shell=True, check=True)
 
         logger.info("Backup completed!")
@@ -189,31 +189,31 @@ def run_incremental_backup(src, dest, user, remote_host, ssh_password, ssh_port=
 
 
 # Example Usage:
-# incremental_backup("/local/source/", "/backup", "user", "remote.server.com", "your_password")
+# incremental_backup("/local/source/", "/backup", "ssh_user", "remote.server.com", "your_password")
 
 
 
 if __name__ == "__main__":
     # Example Usage:
-    # incremental_backup("/local/source/", "/backup", "user", "remote.server.com", ssh_password="your_password")
+    # incremental_backup("/local/source/", "/backup", "ssh_user", "remote.server.com", ssh_password="your_password")
     
     # TODO: Possible fix to avoid storing pass
     # create key for the program
     # ssh-keygen -t rsa -b 4096 -f ~/.ssh/easybackup_key -N ""
-    # ssh-copy-id -i ~/.ssh/easybackup_key.pub -p <ssh_port> <user>@<remote_host>
+    # ssh-copy-id -i ~/.ssh/easybackup_key.pub -p <ssh_port> <ssh_user>@<remote_host>
     # or
-    # cat ~/.ssh/backup_key.pub | ssh -p <ssh_port> <user>@<remote_host> "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
+    # cat ~/.ssh/backup_key.pub | ssh -p <ssh_port> <ssh_user>@<remote_host> "mkdir -p ~/.ssh && cat >> ~/.ssh/authorized_keys"
     # test connection whithout a pasword
-    # ssh -i ~/.ssh/backup_key -p <ssh_port> <user>@<remote_host>
+    # ssh -i ~/.ssh/backup_key -p <ssh_port> <ssh_user>@<remote_host>
 
     # Adding credentials stored infile for testing
     
     from credentials_raw_testing_DO_NOT_ADD_TO_REPO import connections_dict
     connection_dict = connections_dict["NAS No Key"]
 
-    run_incremental_backup(src=connection_dict["src"],
-                           dest=connection_dict["dest"],
-                           user=connection_dict["user"],
+    run_incremental_backup(local_path=connection_dict["local_path"],
+                           remote_path=connection_dict["remote_path"],
+                           ssh_user=connection_dict["ssh_user"],
                            ssh_password=connection_dict["ssh_password"],
                            remote_host=connection_dict["remote_host"],
                            ssh_port=connection_dict["ssh_port"],
