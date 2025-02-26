@@ -33,6 +33,7 @@ if __name__ == "__main__":
     from utils.credentials_raw_testing_DO_NOT_ADD_TO_REPO import test_backup_config
     backup_conf_dict = test_backup_config["NAS No Key"]
 
+    logger.info(f"Starting backup using configuration named: {backup_conf_dict['name']}")
     run_incremental_backup(src=backup_conf_dict["src"],
                            dest=backup_conf_dict["dest"],
                            user=backup_conf_dict["user"],
