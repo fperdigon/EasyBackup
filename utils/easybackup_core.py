@@ -3,9 +3,50 @@
 import subprocess
 import datetime
 import re
-import sys
-import logging
 from utils.logger import logger  # Import the shared logger
+
+
+def test_ssh_connection_with_sshpass(host, port=22, username=None, password=None, timeout=5):
+    """
+    Test SSH connection using sshpass for password authentication and subprocess.
+
+    Args:
+    - host (str): The remote server's hostname or IP address.
+    - port (int, optional): SSH port (default is 22).
+    - username (str): SSH username.
+    - password (str): SSH password for authentication.
+    - timeout (int, optional): Connection timeout in seconds.
+
+    Returns:
+    - bool: True if connection is successful, False otherwise.
+    - str: Error message if connection fails.
+    """
+    if not password:
+        return False, "Password is required when using sshpass."
+
+    # Create the sshpass command using password and ssh
+    ssh_command = [
+        "sshpass", "-p", password, "ssh", "-o", f"ConnectTimeout={timeout}", "-p", str(port),
+        f"{username}@{host}", "exit"
+    ]
+
+    try:
+        # Run SSH command with sshpass
+        result = subprocess.run(ssh_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=timeout)
+
+        if result.returncode == 0:
+            return True, "SSH connection successful."
+        else:
+            # If returncode is non-zero, check for authentication or other errors
+            if "Permission denied" in result.stderr or "Authentication failed" in result.stderr:
+                return False, "Authentication failed: Incorrect username or password."
+            else:
+                return False, f"SSH connection failed: {result.stderr.strip()}"
+
+    except subprocess.TimeoutExpired:
+        return False, "SSH connection timed out."
+    except Exception as e:
+        return False, f"Unexpected error: {str(e)}"
 
 
 def parse_rsync_current_file(line):
@@ -24,6 +65,7 @@ def parse_rsync_current_file(line):
     if filename_match:
         return filename_match.group(1).strip()  # Remove leading/trailing whitespace
     return None
+
 
 def parse_rsync_progress(line):
     """
@@ -68,75 +110,93 @@ def run_incremental_backup(src, dest, user, remote_host, ssh_password, ssh_port=
         ssh_port (int): SSH port.
         keep_days (int): Number of days to keep old backups.
     """
-    date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    new_backup = f"{dest}/{date_str}"
-    latest = f"{dest}/latest"
 
-    # SSH command with password authentication using sshpass
-    ssh_cmd = f"sshpass -p '{ssh_password}' ssh -p {ssh_port}"
+    success, message = test_ssh_connection_with_sshpass(host=remote_host, port=ssh_port, username=user, password=ssh_password)
 
-    # Find the previous backup
-    get_prev_cmd = f"{ssh_cmd} {user}@{remote_host} 'readlink {latest}'"
-    try:
-        prev_backup = subprocess.check_output(get_prev_cmd, shell=True, text=True).strip()
-    except subprocess.CalledProcessError:
-        prev_backup = ""
+    if success:
+        logger.info("SSH connection sucessful")
 
-    # Create new backup directory on remote server
-    subprocess.run(f"{ssh_cmd} {user}@{remote_host} 'mkdir -p {new_backup}'", shell=True, check=True)
+        date_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        new_backup = f"{dest}/{date_str}"
+        latest = f"{dest}/latest"
 
-    # Rsync command with password authentication and progress tracking
-    rsync_base = "rsync -a --delete --info=progress2 --progress"
-    rsync_ssh = f"-e 'sshpass -p \"{ssh_password}\" ssh -p {ssh_port}'"
-    
-    if prev_backup:
-        rsync_cmd = f"{rsync_base} --link-dest={prev_backup} {rsync_ssh} {src} {user}@{remote_host}:{new_backup}"
-    else:
-        rsync_cmd = f"{rsync_base} {rsync_ssh} {src} {user}@{remote_host}:{new_backup}"
+        # SSH command with password authentication using sshpass
+        ssh_cmd = f"sshpass -p '{ssh_password}' ssh -p {ssh_port}"
 
-    logger.info(f"Used rsync command: {rsync_cmd.replace(ssh_password, '********')}")
+        # Find the previous backup
+        get_prev_cmd = f"{ssh_cmd} {user}@{remote_host} 'readlink {latest}'"
+        try:
+            prev_backup = subprocess.check_output(get_prev_cmd, shell=True, text=True).strip() 
+        except subprocess.CalledProcessError:
+            prev_backup = ""
 
-    # Run rsync with real-time progress tracking
-    process = subprocess.Popen(rsync_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        logger.info(f"Previous backup found: {prev_backup}")    
 
-    total_size = None
-    transferred = 0
+        # Create new backup directory on remote server
+        process = subprocess.run(f"{ssh_cmd} {user}@{remote_host} 'mkdir -p {new_backup}'", shell=True, check=True)
+        
+        for line in process.stdout:
+            if "Permission denied, please try again." in line:
+                logger.error("Invalid credentials.")
+                raise ValueError("Invalid credentials.")
 
-    for line in process.stdout:
-        # sys.stdout.write(line)
-        # sys.stdout.flush()
-        logger.debug(f"process.stdout: {line}")
 
-        # Parse currrent file
-        parsed_rsync_current_file = parse_rsync_current_file(line)
+        # Rsync command with password authentication and progress tracking
+        rsync_base = "rsync -a --delete --info=progress2 --progress"
+        rsync_ssh = f"-e 'sshpass -p \"{ssh_password}\" ssh -p {ssh_port}'"
+        
+        if prev_backup:
+            rsync_cmd = f"{rsync_base} --link-dest={prev_backup} {rsync_ssh} {src} {user}@{remote_host}:{new_backup}"
+        else:
+            rsync_cmd = f"{rsync_base} {rsync_ssh} {src} {user}@{remote_host}:{new_backup}"
 
-        # Parse transferred bytes, percentage, and ir-chk from each rsync line
-        parsed_rsync_progress = parse_rsync_progress(line)
+        logger.info(f"Used rsync command: {rsync_cmd.replace(ssh_password, '********')}")
 
-        if parsed_rsync_current_file is not None:
-            logger.debug(f"Current file: {parsed_rsync_current_file}")
+        # Run rsync with real-time progress tracking
+        process = subprocess.Popen(rsync_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-        if parsed_rsync_progress is not None:            
-            logger.debug(f"Overall Progress: {parsed_rsync_progress['Percentage']}% "
-                         f"Speed: {parsed_rsync_progress['Speed']} "
-                         f"Bytes Transferred: ({parsed_rsync_progress['Bytes Transferred']} bytes) | "
-                         f"File {parsed_rsync_progress['IR-Chk Numerator']}/"
-                         f"{parsed_rsync_progress['IR-Chk Denominator']}")
+        for line in process.stdout:
+            # sys.stdout.write(line)
+            # sys.stdout.flush()
+            logger.debug(f"process.stdout: {line}")
             
+            if "Permission denied, please try again." in line:
+                logger.error("Invalid credentials.")
+                raise ValueError("Invalid credentials.")
 
-    # Wait for rsync to finish
-    process.wait()
+            # Parse currrent file
+            parsed_rsync_current_file = parse_rsync_current_file(line)
 
-    # Update the "latest" symlink
-    update_symlink_cmd = f"{ssh_cmd} {user}@{remote_host} 'rm -f {latest} && ln -s {new_backup} {latest}'"
-    subprocess.run(update_symlink_cmd, shell=True, check=True)
+            # Parse transferred bytes, percentage, and ir-chk from each rsync line
+            parsed_rsync_progress = parse_rsync_progress(line)
 
-    # Optional: Delete old backups
-    if keep_days:
-        delete_old_cmd = f"{ssh_cmd} {user}@{remote_host} 'find {dest} -maxdepth 1 -type d -mtime +{keep_days} -exec rm -rf {{}} \;'"
-        subprocess.run(delete_old_cmd, shell=True, check=True)
+            if parsed_rsync_current_file is not None:
+                logger.debug(f"Current file: {parsed_rsync_current_file}")
 
-    logger.info("Backup completed!")
+            if parsed_rsync_progress is not None:            
+                logger.debug(f"Overall Progress: {parsed_rsync_progress['Percentage']}% "
+                            f"Speed: {parsed_rsync_progress['Speed']} "
+                            f"Bytes Transferred: ({parsed_rsync_progress['Bytes Transferred']} bytes) | "
+                            f"File {parsed_rsync_progress['IR-Chk Numerator']}/"
+                            f"{parsed_rsync_progress['IR-Chk Denominator']}")
+              
+        # Wait for rsync to finish
+        process.wait()
+
+        # Update the "latest" symlink
+        update_symlink_cmd = f"{ssh_cmd} {user}@{remote_host} 'rm -f {latest} && ln -s {new_backup} {latest}'"
+        subprocess.run(update_symlink_cmd, shell=True, check=True)
+
+        # Optional: Delete old backups
+        if keep_days:
+            delete_old_cmd = f"{ssh_cmd} {user}@{remote_host} 'find {dest} -maxdepth 1 -type d -mtime +{keep_days} -exec rm -rf {{}} \;'"
+            subprocess.run(delete_old_cmd, shell=True, check=True)
+
+        logger.info("Backup completed!")
+
+    else:
+        logger.info("SSH connection unsucesfull")
+
 
 # Example Usage:
 # incremental_backup("/local/source/", "/backup", "user", "remote.server.com", "your_password")
