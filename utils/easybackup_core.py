@@ -133,13 +133,7 @@ def run_incremental_backup(src, dest, user, remote_host, ssh_password, ssh_port=
         logger.info(f"Previous backup found: {prev_backup}")    
 
         # Create new backup directory on remote server
-        process = subprocess.run(f"{ssh_cmd} {user}@{remote_host} 'mkdir -p {new_backup}'", shell=True, check=True)
-        
-        for line in process.stdout:
-            if "Permission denied, please try again." in line:
-                logger.error("Invalid credentials.")
-                raise ValueError("Invalid credentials.")
-
+        process = subprocess.run(f"{ssh_cmd} {user}@{remote_host} 'mkdir -p {new_backup}'", shell=True, check=True)        
 
         # Rsync command with password authentication and progress tracking
         rsync_base = "rsync -a --delete --info=progress2 --progress"
@@ -158,12 +152,8 @@ def run_incremental_backup(src, dest, user, remote_host, ssh_password, ssh_port=
         for line in process.stdout:
             # sys.stdout.write(line)
             # sys.stdout.flush()
-            logger.debug(f"process.stdout: {line}")
+            logger.debug(f"process.stdout: {line}")            
             
-            if "Permission denied, please try again." in line:
-                logger.error("Invalid credentials.")
-                raise ValueError("Invalid credentials.")
-
             # Parse currrent file
             parsed_rsync_current_file = parse_rsync_current_file(line)
 
