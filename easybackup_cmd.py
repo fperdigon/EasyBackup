@@ -1,4 +1,4 @@
-#============================================================
+# ============================================================
 #
 #  Easy backup
 #  Commandline Tool Version
@@ -7,13 +7,13 @@
 #  email: fperdigon88@gmail.com
 #  github id: fperdigon
 #
-#===========================================================
+# ===========================================================
 
 from utils.easybackup_core import run_incremental_backup
 from utils.logger import logger  # Import the shared logger
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":    
     # Example Usage:
     # incremental_backup("/local/source/", "/backup", "user", "remote.server.com", ssh_password="your_password")
     
@@ -27,6 +27,8 @@ if __name__ == "__main__":
     # ssh -i ~/.ssh/backup_key -p <ssh_port> <user>@<remote_host>
 
     # Adding credentials stored infile for testing
+
+    
     
     from utils.credentials_raw_testing_DO_NOT_ADD_TO_REPO import connections_dict
     connection_dict = connections_dict["NAS No Key"]
