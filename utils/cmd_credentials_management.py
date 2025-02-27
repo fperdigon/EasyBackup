@@ -1,3 +1,14 @@
+# ============================================================
+#
+#  Easy backup
+#  Command line Credentials Management 
+#
+#  author: Francisco Perdigon Romero
+#  email: fperdigon88@gmail.com
+#  github id: fperdigon
+#
+# ===========================================================
+
 import getpass
 from utils.credentials_management import load_backup_configs, save_backup_configs,\
      create_backup_config

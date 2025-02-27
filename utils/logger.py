@@ -1,3 +1,14 @@
+# ============================================================
+#
+#  Easy backup
+#  Logger
+#
+#  author: Francisco Perdigon Romero
+#  email: fperdigon88@gmail.com
+#  github id: fperdigon
+#
+# ===========================================================
+
 import logging
 from pathlib import Path
 import os

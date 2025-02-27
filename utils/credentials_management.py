@@ -1,3 +1,14 @@
+# ============================================================
+#
+#  Easy backup
+#  Credentials Management 
+#
+#  author: Francisco Perdigon Romero
+#  email: fperdigon88@gmail.com
+#  github id: fperdigon
+#
+# ===========================================================
+
 from utils.credentials_encryption import load_encrypted_json, save_encrypted_json, generate_key
 import os
 from utils.logger import logger

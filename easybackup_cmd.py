@@ -1,7 +1,7 @@
 # ============================================================
 #
 #  Easy backup
-#  Commandline Tool Version
+#  Command line Tool Version
 #
 #  author: Francisco Perdigon Romero
 #  email: fperdigon88@gmail.com

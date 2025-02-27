@@ -1,3 +1,14 @@
+# ============================================================
+#
+#  Easy backup
+#  Core Functions 
+#
+#  author: Francisco Perdigon Romero
+#  email: fperdigon88@gmail.com
+#  github id: fperdigon
+#
+# ===========================================================
+
 # apt install rsync open-ssh sshpass openssl
 
 import subprocess

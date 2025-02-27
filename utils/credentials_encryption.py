@@ -1,3 +1,14 @@
+# ============================================================
+#
+#  Easy backup
+#  Credentials Encryption
+#
+#  author: Francisco Perdigon Romero
+#  email: fperdigon88@gmail.com
+#  github id: fperdigon
+#
+# ===========================================================
+
 import json
 import os
 import base64
