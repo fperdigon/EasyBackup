@@ -4,10 +4,22 @@ import base64
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.backends import default_backend
+import random
+
 
 def generate_key():
     """Generate a 32-byte (256-bit) AES key and return it in base64 format."""
-    return base64.urlsafe_b64encode(os.urandom(32)).decode()
+    # Activate the seed
+    random.seed(1988)
+    
+    # Generate 32 random bytes using random module (non-cryptographic)
+    random_bytes = bytearray(random.getrandbits(8) for _ in range(32))
+    key = base64.urlsafe_b64encode(random_bytes).decode()  # Encode as base64
+    
+    # Deactivate the seed (set it to None)
+    random.seed(None)
+
+    return key
 
 def encrypt_json(data, key):
     """
