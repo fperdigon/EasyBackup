@@ -13,7 +13,6 @@ from utils.logger import logger
 
 
 KEY = generate_key()
-print(f"KEY: {KEY}")
 
 def create_backup_config(name, local_path, remote_path, ssh_user, ssh_password, 
                          remote_host, ssh_key, ssh_port, keep_days, active):
