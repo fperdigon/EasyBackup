@@ -10,11 +10,13 @@
 # ===========================================================
 
 import argparse
+from utils.cmd_credentials_management import create_backup_config_cmd, \
+     list_backup_configs_cmd
 from utils.easybackup_core import run_incremental_backup
 from utils.logger import logger  # Import the shared logger
 
 # This variable stores all the backup configurations
-BACKUP_CONFIGS = []
+BACKUP_CONFIGS = {}
 
 def main():
     parser = argparse.ArgumentParser(description="Backup Management Script")
@@ -29,19 +31,21 @@ def main():
 
     # DEBUG: Simulating run_backup entry
     class Args:
-        run_backup = "NAS No Key"
+        #run_backup = "NAS No Key"
+        run_backup = None
         create_backup = None
-        list_backups = None
+        # create_backup = True
+        # list_backups = None
+        list_backups = True
+
     args = Args()
 
     if args.create_backup:
-        global BACKUP_CONFIGS
-        #BACKUP_CONFIGS = create_backup_config(BACKUP_CONFIGS)
+        create_backup_config_cmd()
 
     elif args.list_backups:
-        #list_backup_configs()
-        pass
-
+        list_backup_configs_cmd()
+        
     elif args.run_backup:
         #run_backup(args.run_backup)
 
