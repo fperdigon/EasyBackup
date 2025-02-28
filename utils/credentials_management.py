@@ -24,6 +24,7 @@ from utils.logger import logger
 
 
 KEY = generate_key()
+BACKUP_FILE="./easybackup_configs.enc"
 
 def create_backup_config(name, local_path, remote_path, ssh_user, ssh_password, 
                          remote_host, ssh_key, ssh_port, keep_days, active):
@@ -38,21 +39,16 @@ def create_backup_config(name, local_path, remote_path, ssh_user, ssh_password,
                   "ssh_port": ssh_port,
                   "keep_days": keep_days,
                   "active": active}
-
-    stored_backup_configs = load_backup_configs()
-
+    stored_backup_configs = load_backup_configs(backup_file=BACKUP_FILE)
     # Using remote host as name in case that no name has been provided
     if new_config["name"] == "":
         new_config["name"] = new_config["remote_host"]
-
     stored_backup_configs[new_config["name"]] = new_config
-
-    save_backup_configs(stored_backup_configs)
-
+    save_backup_configs(backups_configs=stored_backup_configs, backup_file=BACKUP_FILE)
     logger.debug("New config was sucessfully created.")
 
 
-def load_backup_configs(backup_file="./backup_configs.enc"):
+def load_backup_configs(backup_file="./easybackup_configs.enc"):
     logger.debug("Loading stored backup configurations.")
     stored_backup_configs = {}
     if os.path.exists(backup_file):
@@ -65,9 +61,19 @@ def load_backup_configs(backup_file="./backup_configs.enc"):
     return stored_backup_configs
 
 
-def save_backup_configs(backups_configs, backup_file="./backup_configs.enc"):
+def save_backup_configs(backups_configs, backup_file="./easybackup_configs.enc"):
     try:
         save_encrypted_json(file_path=backup_file, data=backups_configs, key=KEY)
         logger.debug("Backup configurations stored sucessfully.")
     except:
         logger.debug("Was not possible to store backup configurations.")
+
+
+def delete_backup_config(name):
+    stored_backup_configs = load_backup_configs(backup_file=BACKUP_FILE)    
+    if name in stored_backup_configs and bool(stored_backup_configs[name]):
+        stored_backup_configs.pop(name, None) # Using .pop( its safer than .del())
+        save_backup_configs(backups_configs=stored_backup_configs, backup_file=BACKUP_FILE)
+        logger.info(f"Configuration {name} deleted sucesfully.")
+    else:
+        logger.info(f"Configuration {name} do not exist.")
