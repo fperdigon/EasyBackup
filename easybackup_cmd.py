@@ -11,7 +11,7 @@
 
 import argparse
 from utils.cmd_credentials_management import create_backup_config_cmd, \
-     list_backup_configs_cmd
+     list_backup_configs_cmd, del_backup_configs_cmd
 from utils.easybackup_core import run_incremental_backup
 from utils.logger import logger  # Import the shared logger
 
@@ -25,7 +25,9 @@ def main():
     parser.add_argument("-lbc", "--list-backups", action="store_true", 
                         help="List all backup configurations.")
     parser.add_argument("-rbc", "--run-backup", metavar="NAME", 
-                        help="Run a backup configuration.")
+                        help="Run a backup configuration."),
+    parser.add_argument("-dbc", "--del-backup", 
+                        help="Delete a backup configuration.")
 
     args = parser.parse_args()
 
@@ -35,8 +37,9 @@ def main():
         run_backup = None
         create_backup = None
         # create_backup = True
-        # list_backups = None
-        list_backups = True
+        list_backups = None
+        # list_backups = True
+        del_backup = True
 
     args = Args()
 
@@ -45,6 +48,9 @@ def main():
 
     elif args.list_backups:
         list_backup_configs_cmd()
+
+    elif args.del_backup:
+        del_backup_configs_cmd()
         
     elif args.run_backup:
         #run_backup(args.run_backup)
