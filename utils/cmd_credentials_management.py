@@ -11,7 +11,7 @@
 
 import getpass
 from utils.credentials_management import load_backup_configs, save_backup_configs,\
-     create_backup_config
+     create_backup_config, BACKUP_FILE, delete_backup_config
 from utils.logger import logger
 
 # TODO: Possible fix to avoid storing pass
@@ -57,7 +57,7 @@ def create_backup_config_cmd():
 
 
 def list_backup_configs_cmd():
-    backup_configs = load_backup_configs()
+    backup_configs = load_backup_configs(backup_file=BACKUP_FILE)
 
     if backup_configs:
         c = 0
@@ -77,6 +77,19 @@ def list_backup_configs_cmd():
             
     else:
         logger.info("Nothing to show. No backup configuration has been saved.")
+
+
+def del_backup_configs_cmd():
+    # Check if there is any configuration stored yet
+    stored_backup_configs = load_backup_configs(backup_file=BACKUP_FILE)
+    if stored_backup_configs:
+        list_backup_configs_cmd()
+        name_to_del = input("Enter the name of the backup configuration you want to delete:\n")
+        delete_backup_config(name=name_to_del)
+    else:
+        logger.info(f"Backup configurations vault is empty. Nothing to be deleted.")
+
+    
 
 
 # TODO: Add config modification functions
