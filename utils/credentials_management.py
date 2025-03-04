@@ -9,9 +9,11 @@
 #
 # ===========================================================
 
-from utils.credentials_encryption import load_encrypted_json, save_encrypted_json, generate_key
+from utils.credentials_encryption import load_encrypted_json, save_encrypted_json,\
+     generate_key
 import os
 from utils.logger import logger
+from pathlib import Path
 
 # TODO: Possible fix to avoid storing pass
 # create key for the program
@@ -23,8 +25,17 @@ from utils.logger import logger
 # ssh -i ~/.ssh/backup_key -p <ssh_port> <user>@<remote_host>
 
 
-KEY = generate_key()
-BACKUP_FILE="./easybackup_configs.enc"
+ENCRIPTION_KEY = generate_key()
+BACKUP_FILE = Path.home() / ".easybackup_configs.enc"
+
+def check_if_backup_config_exist(config_name):
+    stored_backup_configs = load_backup_configs(backup_file=BACKUP_FILE)
+    if bool(stored_backup_configs[config_name]):
+        flag = True
+    else:
+        flag = False
+        logger.info(f"Configuration {config_name} do not exist.")
+    return flag
 
 def create_backup_config(name, local_path, remote_path, ssh_user, ssh_password, 
                          remote_host, ssh_key, ssh_port, keep_days, active):
@@ -44,8 +55,11 @@ def create_backup_config(name, local_path, remote_path, ssh_user, ssh_password,
     if new_config["name"] == "":
         new_config["name"] = new_config["remote_host"]
     stored_backup_configs[new_config["name"]] = new_config
-    save_backup_configs(backups_configs=stored_backup_configs, backup_file=BACKUP_FILE)
-    logger.debug("New config was sucessfully created.")
+    save_flag = save_backup_configs(backups_configs=stored_backup_configs, backup_file=BACKUP_FILE)
+    if save_flag:
+        logger.debug("New config was sucessfully created.")
+
+    return save_flag
 
 
 def load_backup_configs(backup_file="./easybackup_configs.enc"):
@@ -53,7 +67,7 @@ def load_backup_configs(backup_file="./easybackup_configs.enc"):
     stored_backup_configs = {}
     if os.path.exists(backup_file):
         logger.debug("Stored backup configurations exist.")
-        stored_backup_configs = load_encrypted_json(file_path=backup_file, key=KEY)
+        stored_backup_configs = load_encrypted_json(file_path=backup_file, key=ENCRIPTION_KEY)
         logger.debug("Stored backup configurations loaded sucesfully.")
     else:
         logger.debug("Stored backup configurations do not exist.")
@@ -63,17 +77,22 @@ def load_backup_configs(backup_file="./easybackup_configs.enc"):
 
 def save_backup_configs(backups_configs, backup_file="./easybackup_configs.enc"):
     try:
-        save_encrypted_json(file_path=backup_file, data=backups_configs, key=KEY)
+        save_encrypted_json(file_path=backup_file, data=backups_configs, key=ENCRIPTION_KEY)
         logger.debug("Backup configurations stored sucessfully.")
+        flag = True
     except:
         logger.debug("Was not possible to store backup configurations.")
+        flag = False
+
+    # save_encrypted_json(file_path=backup_file, data=backups_configs, key=ENCRIPTION_KEY)
+    # flag = True   
+
+    return flag
 
 
-def delete_backup_config(name):
+def delete_backup_config(config_name):
     stored_backup_configs = load_backup_configs(backup_file=BACKUP_FILE)    
-    if name in stored_backup_configs and bool(stored_backup_configs[name]):
-        stored_backup_configs.pop(name, None) # Using .pop( its safer than .del())
+    if check_if_backup_config_exist(config_name=config_name):
+        stored_backup_configs.pop(config_name, None)  # Using .pop( its safer than .del())
         save_backup_configs(backups_configs=stored_backup_configs, backup_file=BACKUP_FILE)
-        logger.info(f"Configuration {name} deleted sucesfully.")
-    else:
-        logger.info(f"Configuration {name} do not exist.")
+        logger.info(f"Configuration {config_name} deleted sucesfully.") 
