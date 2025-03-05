@@ -61,7 +61,7 @@ def list_backup_configs_cmd():
     backup_configs = load_backup_configs(backup_file=BACKUP_FILE)
     if backup_configs:
         c = 0
-        print("\nBackup configurations:\n")
+        print(f"\nBackup configurations [Total {len(backup_configs)}]:\n")
         for key, value in backup_configs.items():            
             #print(f"Backup Name: {key}")
             for sub_key, sub_value in value.items():
@@ -87,7 +87,7 @@ def del_backup_configs_cmd():
     if stored_backup_configs:
         list_backup_configs_cmd()
         name_to_del = input("Enter the name of the backup configuration you wish to delete:\n")
-        delete_backup_config(name=name_to_del)
+        delete_backup_config(config_name=name_to_del)
     else:
         logger.info(f"Backup configurations vault is empty. Nothing to be deleted.")
 
