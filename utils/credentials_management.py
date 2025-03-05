@@ -30,7 +30,7 @@ BACKUP_FILE = Path.home() / ".easybackup_configs.enc"
 
 def check_if_backup_config_exist(config_name):
     stored_backup_configs = load_backup_configs(backup_file=BACKUP_FILE)
-    if bool(stored_backup_configs[config_name]):
+    if config_name in stored_backup_configs:
         flag = True
     else:
         flag = False
