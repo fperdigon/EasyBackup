@@ -9,7 +9,6 @@
 #
 # ===========================================================
 
-# apt install rsync open-ssh sshpass openssl
 
 import subprocess
 import datetime
