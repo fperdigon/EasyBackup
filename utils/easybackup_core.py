@@ -196,8 +196,7 @@ def run_incremental_backup(local_path, remote_path, ssh_user, remote_host, ssh_p
         logger.info("Backup completed!")
 
     else:
-        logger.info("SSH connection unsucesfull")
-
+        logger.info(f"SSH connection unsucesfull: {message}")
 
 # Example Usage:
 # incremental_backup("/local/source/", "/backup", "ssh_user", "remote.server.com", "your_password")
