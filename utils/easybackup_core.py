@@ -53,9 +53,10 @@ def test_ssh_connection_with_sshpass(remote_host, ssh_port=22, ssh_user=None, ss
             else:
                 return False, f"SSH connection failed: {result.stderr.strip()}"
 
-    except subprocess.TimeoutExpired:
-        return False, "SSH connection timed out."
+    # except subprocess.TimeoutExpired:
+    #     return False, "SSH connection timed out."
     except Exception as e:
+        logger.error(f"Unexpected error: {str(e)}")
         return False, f"Unexpected error: {str(e)}"
 
 
