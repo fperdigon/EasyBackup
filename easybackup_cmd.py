@@ -7,6 +7,8 @@
 #  email: fperdigon88@gmail.com
 #  github id: fperdigon
 #
+#  DEBIAN apt install rsync openssh-client sshpass openssl
+#  UBUNTU apt install rsync open-ssh sshpass openssl
 # ===========================================================
 
 import argparse
