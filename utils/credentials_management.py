@@ -66,9 +66,9 @@ def load_backup_configs(backup_file="./easybackup_configs.enc"):
     logger.debug("Loading stored backup configurations.")
     stored_backup_configs = {}
     if os.path.exists(backup_file):
-        logger.debug("Stored backup configurations exist.")
+        logger.debug(f"Stored backup configurations exist on {str(Path(backup_file).resolve())}")
         stored_backup_configs = load_encrypted_json(file_path=backup_file, key=ENCRIPTION_KEY)
-        logger.debug("Stored backup configurations loaded sucesfully.")
+        logger.debug("Stored backup configurations loaded successfully.")
     else:
         logger.debug("Stored backup configurations do not exist.")
 
